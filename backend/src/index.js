@@ -14,7 +14,7 @@ let db;
 // Connessione a MongoDB tramite il driver nativo
 MongoClient.connect(MONGO_URI)
   .then((client) => {
-    console.log('✅ Connesso con successo a MongoDB');
+    console.log('Connesso a MongoDB');
     db = client.db();
     
     // Rotta di prova per verificare che l'API risponda
@@ -23,9 +23,9 @@ MongoClient.connect(MONGO_URI)
     });
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server backend avviato sulla porta ${PORT}`);
+      console.log(`Server backend avviato sulla porta ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('❌ Errore di connessione a MongoDB:', err);
+    console.error('Errore di connessione a MongoDB:', err);
   });
