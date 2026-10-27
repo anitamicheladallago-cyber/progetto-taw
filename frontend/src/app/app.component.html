@@ -1,4 +1,127 @@
-<div style="font-family: Arial, sans-serif; padding: 20px;">
-  <h1>{{ title }}</h1>
-  <p>Benvenuti nel portale per le candidature di mobilita internazionale.</p>
+<div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;">
+  <header style="border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+    <h1>{{ title }}</h1>
+    <div *ngIf="authService.isLoggedIn()">
+      <span>Ruolo: <strong>{{ authService.getUserRole() }}</strong></span>
+      <button (click)="onLogout()" style="margin-left: 15px; padding: 5px 10px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+    </div>
+  </header>
+
+  <!-- Messaggi di Feedback -->
+  <div *ngIf="message" style="padding: 10px; background-color: #e2e3e5; border-radius: 4px; margin-bottom: 20px;">
+    {{ message }}
+  </div>
+
+  <!-- SEZIONE 1: AUTENTICAZIONE (Se non loggato) -->
+  <div *ngIf="!authService.isLoggedIn()" style="border: 1px solid #ccc; padding: 20px; border-radius: 8px;">
+    <h2>{{ isRegistering ? 'Registrazione Utente' : 'Login' }}</h2>
+    
+    <form (ngSubmit)="isRegistering ? onRegister() : onLogin()">
+      <div *ngIf="isRegistering" style="margin-bottom: 10px;">
+        <label>Username: </label><br>
+        <input type="text" [(ngModel)]="authData.username" name="username" required style="width: 100%; padding: 8px;">
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label>Email: </label><br>
+        <input type="email" [(ngModel)]="authData.email" name="email" required style="width: 100%; padding: 8px;">
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label>Password: </label><br>
+        <input type="password" [(ngModel)]="authData.password" name="password" required style="width: 100%; padding: 8px;">
+      </div>
+
+      <div *ngIf="isRegistering" style="margin-bottom: 10px;">
+        <label>Ruolo: </label><br>
+        <select [(ngModel)]="authData.role" name="role" style="width: 100%; padding: 8px;">
+          <option value="student">Student</option>
+          <option value="professor">Professor / Admin</option>
+        </select>
+      </div>
+
+      <button type="submit" style="padding: 10px 20px; background-color: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        {{ isRegistering ? 'Registrati' : 'Accedi' }}
+      </button>
+    </form>
+
+    <p style="margin-top: 15px; cursor: pointer; color: #0d6efd;" (click)="toggleAuthMode()">
+      {{ isRegistering ? 'Hai già un account? Fai il login' : 'Non hai un account? Registrati' }}
+    </p>
+  </div>
+
+  <!-- SEZIONE 2: DASHBOARD (Se loggato) -->
+  <div *ngIf="authService.isLoggedIn()">
+    
+    <!-- Sezione Professori/Admin: Aggiungi Destinazione -->
+    <div *ngIf="authService.getUserRole() === 'professor' || authService.getUserRole() === 'admin'" style="border: 1px solid #198754; padding: 15px; border-radius: 8px; margin-bottom: 20px; background-color: #f8fff9;">
+      <h3>Pannello Docente: Aggiungi Destinazione Overseas</h3>
+      <form (ngSubmit)="onCreateDestination()">
+        <input type="text" [(ngModel)]="newDestination.universityName" name="univ" placeholder="Nome Università" required style="margin-right: 10px; padding: 5px;">
+        <input type="text" [(ngModel)]="newDestination.country" name="country" placeholder="Paese" required style="margin-right: 10px; padding: 5px;">
+        <input type="number" [(ngModel)]="newDestination.availableSlots" name="slots" placeholder="Posti" required style="margin-right: 10px; padding: 5px; width: 60px;">
+        <button type="submit" style="padding: 6px 12px; background-color: #198754; color: white; border: none; border-radius: 4px; cursor: pointer;">Aggiungi</button>
+      </form>
+    </div>
+
+    <!-- Catalogo Destinazioni -->
+    <section style="margin-bottom: 30px;">
+      <h2>Destinazioni Overseas Disponibili</h2>
+      <div *ngIf="destinations.length === 0">Nessuna destinazione presente.</div>
+      <ul style="list-style-type: none; padding: 0;">
+        <li *ngFor="let dest of destinations" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; border-radius: 4px;">
+          <strong>{{ dest.universityName }}</strong> ({{ dest.country }}) - Posti disponibili: {{ dest.availableSlots }}
+          
+          <!-- Form Candidatura Studente -->
+          <div *ngIf="authService.getUserRole() === 'student'" style="margin-top: 10px;">
+            <button (click)="selectedDestinationId = dest._id" style="padding: 4px 8px; background-color: #0dcaf0; border: none; border-radius: 4px; cursor: pointer;">
+              Candidati qui
+            </button>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Modal/Form Candidatura Studente -->
+    <div *ngIf="selectedDestinationId && authService.getUserRole() === 'student'" style="border: 2px solid #0dcaf0; padding: 15px; border-radius: 8px; margin-bottom: 20px; background-color: #f0fcdff;">
+      <h3>Invia Candidatura</h3>
+      <form (ngSubmit)="onSubmitApplication()">
+        <div style="margin-bottom: 10px;">
+          <label>Media Ponderata (GPA): </label>
+          <input type="number" [(ngModel)]="gpa" name="gpa" required style="padding: 5px;">
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label>Lettera Motivazionale: </label><br>
+          <textarea [(ngModel)]="motivationalLetter" name="letter" required style="width: 100%; height: 80px;"></textarea>
+        </div>
+        <button type="submit" style="padding: 8px 16px; background-color: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer;">Invia Domanda</button>
+        <button type="button" (click)="selectedDestinationId = ''" style="margin-left: 10px; padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Annulla</button>
+      </form>
+    </div>
+
+    <!-- Elenco Candidature -->
+    <section>
+      <h2>{{ authService.getUserRole() === 'student' ? 'Le Mie Candidature' : 'Tutte le Candidature Ricevute' }}</h2>
+      <div *ngIf="applications.length === 0">Nessuna candidatura inviata/presente.</div>
+      <table *ngIf="applications.length > 0" style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr style="background-color: #f2f2f2;">
+            <th style="padding: 8px; border: 1px solid #ddd;">Studente</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Media GPA</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Stato</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Lettera Motivazionale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let app of applications">
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ app.username }}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ app.gpa }}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>{{ app.status }}</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ app.motivationalLetter }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </div>
 </div>
